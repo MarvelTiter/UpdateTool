@@ -1,0 +1,255 @@
+﻿@page "/"
+@using UpdateTool.Core.Services
+
+<PageTitle>应用更新工具</PageTitle>
+
+<div class="container">
+    
+    <div class="update-form">
+        <div class="form-section">
+            <h3>1. 选择更新包和目标路径</h3>
+            
+            <div class="form-group">
+                <label>更新包路径:</label>
+                <input type="text" @bind="Request.UpdatePath" placeholder="例如: D:\Updates\v1.0.0" />
+            </div>
+            
+            <div class="form-group">
+                <label>目标应用路径:</label>
+                <input type="text" @bind="Request.TargetPath" placeholder="例如: D:\MyApp" />
+            </div>
+            
+            <div class="form-group">
+                <label>备份目录:</label>
+                <input type="text" @bind="Request.BackupDirectory" placeholder="默认: ./backups" />
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>2. 进程设置</h3>
+            
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" @bind="Request.StopProcess" />
+                    停止应用进程
+                </label>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>进程名称:</label>
+                    <input type="text" @bind="Request.ProcessName" placeholder="如: MyApp" disabled="@(!Request.StopProcess)" />
+                </div>
+                <span class="or-text">或</span>
+                <div class="form-group">
+                    <label>端口号:</label>
+                    <input type="number" @bind="Request.ProcessPort" placeholder="如: 5000" disabled="@(!Request.StopProcess)" />
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>替换前等待时间 (秒):</label>
+                <input type="number" @bind="Request.WaitSecondsBeforeReplace" min="1" max="30" />
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>3. 文件排除</h3>
+            <div class="form-group">
+                <label>排除的文件类型 (逗号分隔):</label>
+                <input type="text" @bind="ExcludePatternsText" placeholder="如: *.pdb, *.xml" />
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>4. 配置文件更新 (appsettings.json)</h3>
+            <p class="hint">支持嵌套键，如: ConnectionStrings:Default</p>
+            
+            @if (AppSettingsUpdates.Count > 0)
+            {
+                <div class="settings-list">
+                    @foreach (var setting in AppSettingsUpdates)
+                    {
+                        @* <div class="setting-item">
+                            <input type="text" @bind="setting.Key" placeholder="键" />
+                            <input type="text" @bind="setting.Value" placeholder="新值" />
+                            <button @onclick="() => RemoveSetting(setting.Key)">删除</button>
+                        </div> *@
+                    }
+                </div>
+            }
+            
+            <button class="btn-secondary" @onclick="AddSetting">+ 添加配置项</button>
+        </div>
+
+        <div class="form-section">
+            <h3>5. 更新后启动</h3>
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" @bind="Request.StartAfterUpdate" />
+                    更新完成后启动应用
+                </label>
+            </div>
+            
+            @if (Request.StartAfterUpdate)
+            {
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>应用路径:</label>
+                        <input type="text" @bind="Request.ApplicationPath" placeholder="如: D:\MyApp\MyApp.exe" />
+                    </div>
+                    <div class="form-group">
+                        <label>启动参数:</label>
+                        <input type="text" @bind="Request.ApplicationArguments" placeholder="如: --urls=http://localhost:5000" />
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="form-actions">
+            <button class="btn-primary" @onclick="PreviewUpdate" disabled="@IsUpdating">
+                预览更新
+            </button>
+            <button class="btn-danger" @onclick="ExecuteUpdate" disabled="@IsUpdating">
+                @(IsUpdating ? "更新中..." : "开始更新")
+            </button>
+        </div>
+    </div>
+
+    @if (IsUpdating)
+    {
+        <div class="progress-section">
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: @ProgressPercentage%"></div>
+            </div>
+            <p class="progress-message">@ProgressMessage</p>
+        </div>
+    }
+
+    @if (Result != null)
+    {
+        <div class="result-section @(Result.Success ? "success" : "error")">
+            <h3>@(Result.Success ? "更新成功！" : "更新失败")</h3>
+            
+            @if (Result.Success)
+            {
+                <div class="result-steps">
+                    @foreach (var step in Result.Steps)
+                    {
+                        <p>✓ @step</p>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="error-message">@Result.ErrorMessage</p>
+            }
+        </div>
+    }
+
+    @if (PreviewFiles.Count > 0)
+    {
+        <div class="preview-section">
+            <h3>更新预览 (@PreviewFiles.Count 个文件)</h3>
+            <div class="file-list">
+                @foreach (var file in PreviewFiles)
+                {
+                    <div class="file-item">
+                        <span class="file-name">@file.RelativePath</span>
+                        <span class="file-size">@FormatFileSize(file.Size)</span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private UpdateRequest Request { get; set; } = new()
+    {
+        CreateBackup = true,
+        BackupDirectory = "./backups",
+        StopProcess = true,
+        WaitSecondsBeforeReplace = 2
+    };
+
+    private string ExcludePatternsText { get; set; } = "*.pdb, *.xml, *.xml";
+    private Dictionary<string, string?> AppSettingsUpdates { get; set; } = new();
+    private List<FileInfo> PreviewFiles { get; set; } = new();
+    
+    private bool IsUpdating { get; set; }
+    private int ProgressPercentage { get; set; }
+    private string ProgressMessage { get; set; } = "";
+    private UpdateResult? Result { get; set; }
+    private UpdateService? _updateService;
+
+    private void AddSetting()
+    {
+        AppSettingsUpdates[$"Key{AppSettingsUpdates.Count + 1}"] = "";
+    }
+
+    private void RemoveSetting(string key)
+    {
+        AppSettingsUpdates.Remove(key);
+    }
+
+    private void PreviewUpdate()
+    {
+        if (string.IsNullOrEmpty(Request.UpdatePath) || string.IsNullOrEmpty(Request.TargetPath))
+        {
+            return;
+        }
+
+        _updateService = new UpdateService();
+        
+        var excludePatterns = string.IsNullOrEmpty(ExcludePatternsText)
+            ? null
+            : ExcludePatternsText.Split(',').Select(s => s.Trim()).ToArray();
+        
+        PreviewFiles = _updateService.PreviewUpdate(Request.UpdatePath, Request.TargetPath, excludePatterns);
+    }
+
+    private async Task ExecuteUpdate()
+    {
+        if (string.IsNullOrEmpty(Request.UpdatePath) || string.IsNullOrEmpty(Request.TargetPath))
+        {
+            return;
+        }
+
+        IsUpdating = true;
+        Result = null;
+        PreviewFiles.Clear();
+        ProgressPercentage = 0;
+        ProgressMessage = "准备中...";
+
+        _updateService = new UpdateService();
+        _updateService.ProgressChanged += (s, e) =>
+        {
+            ProgressPercentage = e.Percentage;
+            ProgressMessage = e.Message;
+            InvokeAsync(StateHasChanged);
+        };
+
+        Request.ExcludePatterns = string.IsNullOrEmpty(ExcludePatternsText)
+            ? null
+            : ExcludePatternsText.Split(',').Select(s => s.Trim()).ToArray();
+        
+        Request.AppSettingsUpdates = AppSettingsUpdates.Count > 0 ? AppSettingsUpdates : null;
+
+        Result = await _updateService.ExecuteUpdateAsync(Request);
+        IsUpdating = false;
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        int order = 0;
+        double size = bytes;
+        while (size >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            size /= 1024;
+        }
+        return $"{size:0.##} {sizes[order]}";
+    }
+}

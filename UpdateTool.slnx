@@ -1,1 +1,5 @@
-<Solution />
+<Solution>
+  <Folder Name="/doc/" />
+  <Project Path="UpdateTool.Core/UpdateTool.Core.csproj" Id="c75eabee-90ba-4c7e-9d3d-3ad07ba80d6c" />
+  <Project Path="UpdateTool.Web/UpdateTool.Web.csproj" Id="ba2377ac-6295-4b6b-b0a3-beb4483ed602" />
+</Solution>
