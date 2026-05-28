@@ -1,5 +1,12 @@
 <Solution>
-  <Folder Name="/doc/" />
-  <Project Path="UpdateTool.Core/UpdateTool.Core.csproj" Id="c75eabee-90ba-4c7e-9d3d-3ad07ba80d6c" />
-  <Project Path="UpdateTool.Web/UpdateTool.Web.csproj" Id="ba2377ac-6295-4b6b-b0a3-beb4483ed602" />
+  <Folder Name="/doc/">
+    <File Path="doc/build.txt" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/UpdateTool.Core/UpdateTool.Core.csproj" />
+    <Project Path="src/UpdateTool/UpdateTool.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/CoreTest/CoreTest.csproj" Id="8abce5c9-c06a-4ca0-9a64-56fdffd5bc41" />
+  </Folder>
 </Solution>

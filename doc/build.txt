@@ -1,0 +1,1 @@
+dotnet publish -c Release -r win-x64 --self-contained -o "E:\Published\UpdateTool" -v detailed

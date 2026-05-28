@@ -1,0 +1,82 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:UpdateTool.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="UpdateTool.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        xmlns:lv="using:UpdateTool.Views"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="UpdateTool">
+    <Window.Styles>
+        <Style Selector="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="0,0,10,0"/>
+        </Style>
+    </Window.Styles>
+    <Grid ColumnDefinitions="420, *" Margin="5">
+        <!--<Button Command="{Binding SelectFileCommand}">测试</Button>-->
+        <StackPanel  Spacing="5" Margin="5">
+            <Grid ColumnDefinitions="120,*,Auto">
+                <TextBlock Grid.Column="0" Grid.Row="0" Text="更新文件"/>
+                <TextBox Grid.Column="1" Grid.Row="0" Text="{Binding Setting.UpdatePackage}" />
+                <Button Grid.Column="2" Command="{Binding SelectFileCommand}" CommandParameter="Package">选择</Button>
+            </Grid>
+            <Grid ColumnDefinitions="120,*,Auto">
+                <TextBlock Grid.Column="0" Grid.Row="0" Text="程序进程"/>
+                <TextBox Grid.Column="1" Grid.Row="0" Text="{Binding Setting.ProcessName}"/>
+                <Button Grid.Column="2" Command="{Binding SelectFileCommand}" CommandParameter="ProcessName">选择</Button>
+            </Grid>
+            <Grid ColumnDefinitions="120,*">
+                <TextBlock Grid.Column="0" Grid.Row="0" Text="程序端口"/>
+                <NumericUpDown Grid.Column="1" Grid.Row="0" Value="{Binding Setting.ProcessPort}" />
+            </Grid>
+            <Grid ColumnDefinitions="120,*,Auto">
+                <TextBlock Grid.Column="0" Grid.Row="0" Text="程序路径"/>
+                <TextBox Grid.Column="1" Grid.Row="0" Text="{Binding Setting.ApplicationPath}" />
+                <Button Grid.Column="2" Command="{Binding SelectFolderPathCommand}" CommandParameter="ApplicationPath">选择</Button>
+            </Grid>
+            <Grid ColumnDefinitions="120,*,Auto">
+                <TextBlock Grid.Column="0" Grid.Row="0" Text="备份目录"/>
+                <TextBox Grid.Column="1" Grid.Row="0" Text="{Binding Setting.BackupDirectory}" />
+                <Button Grid.Column="2" Command="{Binding SelectFolderPathCommand}" CommandParameter="BackupDirectory">选择</Button>
+            </Grid>
+            
+            <Grid ColumnDefinitions="120,*">
+                <TextBlock Grid.Column="0" Grid.Row="0" Text="停止进程"/>
+                <CheckBox Grid.Column="1" Grid.Row="0" IsChecked="{Binding Setting.StopProcess}" />
+            </Grid>
+            <Grid ColumnDefinitions="120,*">
+                <TextBlock Grid.Column="0" Grid.Row="0" Text="配置文件"/>
+                <TextBox Grid.Column="1" Grid.Row="0" Text="{Binding Setting.AppSettingFile}" />
+            </Grid>
+            <Grid ColumnDefinitions="120,*">
+                <TextBlock Grid.Column="0" Grid.Row="0" Text="更新配置文件"/>
+                <CheckBox Grid.Column="1" Grid.Row="0" IsChecked="{Binding Setting.UpdateSettingFile}" />
+            </Grid>
+            <Grid ColumnDefinitions="120,*">
+                <TextBlock Grid.Column="0" Grid.Row="0" Text="替换前等待秒数"/>
+                <NumericUpDown Grid.Column="1" Grid.Row="0" Value="{Binding Setting.WaitSecondsBeforeReplace}" Increment="1000"/>
+            </Grid>
+            <Grid ColumnDefinitions="120,*">
+                <TextBlock Grid.Column="0" Grid.Row="0" Text="排除文件夹"/>
+                <TextBox Grid.Column="1" Grid.Row="0" Text="{Binding Setting.ExcludeFolder}" />
+            </Grid>
+            <Grid ColumnDefinitions="120,*">
+                <TextBlock Grid.Column="0" Grid.Row="0" Text="更新后启动"/>
+                <CheckBox Grid.Column="1" Grid.Row="0" IsChecked="{Binding Setting.StartProcessAfterUpdate}" />
+            </Grid>
+            <Grid>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Command="{Binding ExecuteUpdateCommand}">执行更新</Button>
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+        <GroupBox Header="日志" Grid.Column="1">
+        <lv:LogView ></lv:LogView>
+        </GroupBox>
+    </Grid>
+
+</Window>
