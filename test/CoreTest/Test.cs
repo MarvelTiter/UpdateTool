@@ -8,19 +8,27 @@ namespace CoreTest
     public sealed class Test
     {
         [TestMethod]
-        public void TestJsonUpdate()
+        public async Task TestJsonUpdate()
         {
             var sc = new ServiceCollection();
-            sc.AddLogging(lb =>
-            {
-
-            });
+            sc.AddLogging();
             sc.AddScoped<FileUpdateService>();
             var service = sc.BuildServiceProvider();
             var fus = service.GetRequiredService<FileUpdateService>();
             var newPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "new");
             var oldPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "old");
-            fus.UpdateSettingFile(newPath, oldPath, "appsettings.json");
+            await fus.UpdateSettingFile(newPath, oldPath, "appsettings.json");
+        }
+
+        [TestMethod]
+        public async Task ProcessStopTest()
+        {
+            var sc = new ServiceCollection();
+            sc.AddLogging();
+            sc.AddScoped<ProcessService>();
+            var service = sc.BuildServiceProvider();
+            var ps = service.GetRequiredService<ProcessService>();
+            await ps.StopProcessAsync("RisCollector");
         }
     }
 }

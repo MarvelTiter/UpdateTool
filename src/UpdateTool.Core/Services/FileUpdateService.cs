@@ -1,5 +1,6 @@
 ﻿using AutoInjectGenerator;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -46,8 +47,6 @@ public class FileUpdateService(ILogger<FileUpdateService> logger)
                 }
             }
 
-
-
             var relativePath = Path.GetRelativePath(updatePath, file);
             var destFile = Path.Combine(request.ApplicationPath, relativePath);
             var destDir = Path.GetDirectoryName(destFile);
@@ -58,10 +57,11 @@ public class FileUpdateService(ILogger<FileUpdateService> logger)
             }
 
             // 备份原文件（如果有的话）
-            if (File.Exists(destFile))
-            {
-                File.Move(destFile, $"{destFile}.temp", overwrite: true);
-            }
+            if (file.EndsWith(request.AppSettingFile))
+                if (File.Exists(destFile))
+                {
+                    File.Move(destFile, $"{destFile}.temp", overwrite: true);
+                }
 
             await CopyFileWithRetryAsync(file, destFile);
         }
@@ -145,7 +145,7 @@ public class FileUpdateService(ILogger<FileUpdateService> logger)
         }
     }
 
-    public void UpdateSettingFile(string newFilePath, string originalFilePath, string settingFile)
+    public async Task UpdateSettingFile(string newFilePath, string originalFilePath, string settingFile)
     {
         try
         {
@@ -159,8 +159,12 @@ public class FileUpdateService(ILogger<FileUpdateService> logger)
                 AllowTrailingCommas = true,
                 CommentHandling = JsonCommentHandling.Skip
             };
-            using var newStream = File.Open(newJsons, FileMode.Open, FileAccess.ReadWrite, FileShare.Delete);
-            using var oldStream = File.Open(oldJsons, FileMode.Open, FileAccess.ReadWrite);
+            var newBytes = await File.ReadAllBytesAsync(newJsons);
+            using var newStream = new MemoryStream(newBytes);
+            var oldBytes = await File.ReadAllBytesAsync(oldJsons);
+            using var oldStream = new MemoryStream(oldBytes);
+            //using var newStream = File.Open(newJsons, FileMode.Open, FileAccess.ReadWrite, FileShare.Delete);
+            //using var oldStream = File.Open(oldJsons, FileMode.Open, FileAccess.ReadWrite);
             var newDoc = JsonNode.Parse(newStream, documentOptions: jsonOption);
             var oldDoc = JsonDocument.Parse(oldStream, jsonOption);
             if (newDoc is null)
@@ -178,11 +182,9 @@ public class FileUpdateService(ILogger<FileUpdateService> logger)
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
             });
             var newSettingFile = Path.Combine(newFilePath, settingFile);
-            if (File.Exists(newSettingFile))
-            {
-                File.Delete(newSettingFile);
-            }
-            File.WriteAllText(newSettingFile, json);
+            var tempFile = newSettingFile + ".tmp";
+            File.WriteAllText(tempFile, json);
+            File.Move(tempFile, newSettingFile, overwrite: true);
         }
         catch (Exception ex)
         {
@@ -224,16 +226,19 @@ public class FileUpdateService(ILogger<FileUpdateService> logger)
                 var segments = path.Split('/');
 
                 // 从 root 开始逐层导航
-                var target = GetTargetNode(root, segments, logger);
-                if (target is null || !IsTypeMatch(target, newValue))
+                if (!GetTargetNode(root, segments, logger, out var target) || !IsTypeMatch(target, newValue))
                 {
                     logger.LogWarning("  [跳过] 类型不匹配: {path}", path);
                     continue;
                 }
-                target.ReplaceWith<JsonElement>(newValue);
+#pragma warning disable IL2026 // Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code
+#pragma warning disable IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
+                target?.ReplaceWith<JsonElement>(newValue);
+#pragma warning restore IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
+#pragma warning restore IL2026 // Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code
             }
 
-            static JsonNode? GetTargetNode(JsonNode root, string[] segments, ILogger logger)
+            static bool GetTargetNode(JsonNode root, string[] segments, ILogger logger, out JsonNode? target)
             {
                 JsonNode? currentNode = root;
                 for (var i = 0; i < segments.Length - 1; i++)
@@ -247,10 +252,15 @@ public class FileUpdateService(ILogger<FileUpdateService> logger)
                     }
                 }
                 var final = segments[^1];
-                return currentNode?[final];
+                if (currentNode is JsonObject o && o.TryGetPropertyValue(final, out target))
+                {
+                    return true;
+                }
+                target = null;
+                return false;
             }
 
-            static bool IsTypeMatch(JsonNode node, JsonElement element)
+            static bool IsTypeMatch(JsonNode? node, JsonElement element)
             {
                 return element.ValueKind switch
                 {

@@ -103,13 +103,13 @@ namespace UpdateTool.Views
                 // 批量添加日志到UI
                 var runs = new List<Inline>
                 {
-                    new Run($"{logEntry.Timestamp}")
+                    new Run($"{logEntry.Timestamp:yyyy-MM-dd HH:mm:ss}")
                     {
                         Foreground = GrayBrush,
                         BaselineAlignment = BaselineAlignment.Center
                     }
                 };
-                var levelRun = new Run($"[{logEntry.LogLevel}]") // 修复中文乱码，使用方括号替代
+                var levelRun = new Run($"[{GetLogLevelString(logEntry.LogLevel)}]") // 修复中文乱码，使用方括号替代
                 {
                     Foreground = GetLevelForeground(logEntry.LogLevel),
                 };
@@ -119,6 +119,11 @@ namespace UpdateTool.Views
                 }
 
                 runs.Add(levelRun);
+                runs.Add(new Run($"[{logEntry.Category}]{Environment.NewLine}\t")
+                {
+                    Foreground = TextBrush,
+                    BaselineAlignment = BaselineAlignment.Center
+                });
                 runs.Add(new Run(logEntry.MessageTemplate)
                 {
                     Foreground = TextBrush,
@@ -177,10 +182,25 @@ namespace UpdateTool.Views
                     _ => DefaultBrush
                 };
             }
+
+            static string GetLogLevelString(LogLevel logLevel)
+            {
+                return logLevel switch
+                {
+                    LogLevel.Trace => "trce",
+                    LogLevel.Debug => "dbug",
+                    LogLevel.Information => "info",
+                    LogLevel.Warning => "warn",
+                    LogLevel.Error => "fail",
+                    LogLevel.Critical => "crit",
+                    _ => throw new ArgumentOutOfRangeException(nameof(logLevel))
+                };
+            }
         }
 
         private void LogScrollViewer_OnPointerPressed(object? sender, PointerPressedEventArgs e)
         {
+            if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed) contextMenu.Open();
         }
 
         private async void Copy_OnClick(object? sender, RoutedEventArgs e)

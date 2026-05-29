@@ -19,7 +19,11 @@ public class ProcessService(ILogger<ProcessService> logger)
         int count = 0;
 
         var processes = port.HasValue ? GetProcessesByPort(port.Value) : GetProcessesByName(processName);
-
+        if (processes.Length == 0)
+        {
+            logger.LogInformation("未找到相关进程");
+            return count;
+        }
         foreach (var process in processes)
         {
             try
@@ -40,7 +44,14 @@ public class ProcessService(ILogger<ProcessService> logger)
         }
         return count;
 
-        static Process[] GetProcessesByName(string? name) => Process.GetProcessesByName(name);
+        static Process[] GetProcessesByName(string? name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return [];
+            }
+            return Process.GetProcessesByName(name);
+        }
         static Process[] GetProcessesByPort(int port)
         {
             // netstat -ano | findstr :端口
@@ -59,11 +70,11 @@ public class ProcessService(ILogger<ProcessService> logger)
             string output = netstat.StandardOutput.ReadToEnd();
             netstat.WaitForExit();
 
-            string pattern = $@"TCP\s+[^\s]+:{port}\s+[^\s]+:\s+\S+\s+(\d+)";
+            string pattern = $@"(TCP)(.+):{port}\b.+\s?\b(\d+)";
             Match match = Regex.Match(output, pattern, RegexOptions.IgnoreCase);
             if (!match.Success) return [];
 
-            string pid = match.Groups[1].Value;
+            string pid = match.Groups[3].Value;
 
             // 通过PID查进程名
             var process = Process.GetProcessById(int.Parse(pid));
