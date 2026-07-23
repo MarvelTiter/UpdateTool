@@ -77,8 +77,17 @@
                                                    VerticalAlignment="Center"/>
 
                                         <TextBox Grid.Column="2"
-                                                 IsVisible="{Binding IsScalarValue}"
+                                                 IsVisible="{Binding UseTextBox}"
                                                  Text="{Binding Value, Mode=TwoWay}" />
+
+                                        <ComboBox Grid.Column="2"
+                                                  SelectedItem="{Binding Value}"
+                                                  IsVisible="{Binding UseBooleanSelect}">
+                                            <ComboBox.Items>
+                                                <x:String>true</x:String>
+                                                <x:String>false</x:String>
+                                            </ComboBox.Items>
+                                        </ComboBox>
 
                                         <Button Grid.Column="2"
                                                 IsVisible="{Binding !IsScalarValue}"

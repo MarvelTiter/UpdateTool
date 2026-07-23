@@ -25,7 +25,7 @@ public partial class ReadedJsonNode : ObservableObject
 
     private static readonly ObservableCollection<JsonNodeTypeViewModel> jsonNodeTypes =
     [
-        new() { Type = JsonNodeType.String, DisplayName = "字符串" },
+        new() { Type = JsonNodeType.String, DisplayName = "文本" },
         new() { Type = JsonNodeType.Number, DisplayName = "数字" },
         new() { Type = JsonNodeType.Boolean, DisplayName = "布尔值" },
         new() { Type = JsonNodeType.Null, DisplayName = "空值" },
@@ -48,6 +48,10 @@ public partial class ReadedJsonNode : ObservableObject
     public bool IsAdd { get; set; }
 
     public bool IsScalarValue => Type is not JsonNodeType.Object && Type is not JsonNodeType.Array;
+
+    public bool UseTextBox => IsScalarValue && Type is not JsonNodeType.Boolean;
+
+    public bool UseBooleanSelect => IsScalarValue && Type is JsonNodeType.Boolean;
 
     public bool IsSelectedEnabled => !IsScalarValue || Parent is null;
 
@@ -87,5 +91,18 @@ public partial class ReadedJsonNode : ObservableObject
         }
 
         return clone;
+    }
+    private JsonNodeType? originalType;
+    partial void OnValueChanged(string value)
+    {
+        if (string.IsNullOrEmpty(value) || value == "null")
+        {
+            originalType = Type;
+            Type = JsonNodeType.Null;
+        }
+        else if (originalType.HasValue)
+        {
+            Type = originalType.Value;
+        }
     }
 }
