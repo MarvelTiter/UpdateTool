@@ -1,0 +1,118 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="800"
+             d:DesignHeight="450"
+             xmlns:models="using:UpdateTool.Core.Models"
+             xmlns:vm="using:UpdateTool.ViewModels"
+             x:DataType="vm:JsonEditViewModel"
+             x:Class="UpdateTool.JsonEditView">
+    <Grid RowDefinitions="Auto,*,Auto">
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="2" Spacing="2">
+            <Button Content="加载配置文件" Command="{Binding OpenFileCommand}"
+                    CommandParameter="{Binding $parent[Window]}" Padding="8 2" />
+            <Button Content="保存配置文件" Command="{Binding SaveFileCommand}"
+                    CommandParameter="{Binding $parent[Window]}" Padding="8 2" />
+            <Button Content="从其他文件同步配置" Command="{Binding MergeFromFileCommand}"
+                    CommandParameter="{Binding $parent[Window]}" Padding="8 2" />
+            <Button Content="添加子节点" Padding="6 2"
+                    Command="{Binding JsonTree.AddChildNodeCommand}" />
+            <Button Content="删除选中节点" Padding="6 2"
+                    Command="{Binding JsonTree.RemoveNodeCommand}"
+                    CommandParameter="{Binding JsonTree.SelectedNode}" />
+            <Button Content="复制选中节点" Padding="6 2"
+                    Command="{Binding JsonTree.DuplicateNodeCommand}"
+                    IsVisible="{Binding JsonTree.EnableDuplicate}" />
+        </StackPanel>
+
+        <DockPanel Grid.Row="1" HorizontalSpacing="5" Margin="5">
+            <GroupBox Header="配置文件" Grid.Column="0"
+                      Width="400"
+                      DockPanel.Dock="Left">
+                <TreeView ItemsSource="{Binding JsonTree.RootNodes}"
+                          SelectedItem="{Binding JsonTree.SelectedNode}"
+                          Margin="0"
+                          AutoScrollToSelectedItem="True">
+                    <TreeView.Styles>
+                        <Style Selector="TreeViewItem">
+                            <Setter Property="IsExpanded" Value="{Binding (models:ReadedJsonNode).IsExpanded}"></Setter>
+                            <Setter Property="IsEnabled" Value="{Binding (models:ReadedJsonNode).IsSelectedEnabled}"></Setter>
+                        </Style>
+                    </TreeView.Styles>
+                    <TreeView.DataTemplates>
+                        <TreeDataTemplate DataType="models:ReadedJsonNode"
+                                          ItemsSource="{Binding Children}">
+                            <StackPanel Orientation="Horizontal"
+                                        Background="Transparent" Margin="0 1">
+                                <TextBlock Text="{Binding Key}" FontWeight="Bold" />
+                                <TextBlock Text=": " />
+                                <TextBlock Text="{Binding Value}"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                            </StackPanel>
+                        </TreeDataTemplate>
+                    </TreeView.DataTemplates>
+                </TreeView>
+            </GroupBox>
+            <GroupBox Header="属性编辑">
+                <DockPanel VerticalSpacing="10">
+                    <TextBlock DockPanel.Dock="Top" FontSize="18">
+                        <Run>当前节点: </Run>
+                        <Run Text="{Binding JsonTree.SelectedNode.Key}"></Run>
+                    </TextBlock>
+                    <ScrollViewer>
+                        <ItemsControl ItemsSource="{Binding JsonTree.ScalarFields}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="models:ReadedJsonNode">
+                                    <Grid ColumnDefinitions="*,Auto,2*,Auto,Auto"
+                                          ColumnSpacing="5"
+                                          Margin="0,0,0,5">
+                                        <TextBox Grid.Column="0"
+                                                 Text="{Binding Key, Mode=TwoWay}"
+                                                 IsEnabled="{Binding IsAdd}"/>
+
+                                        <TextBlock Grid.Column="1"
+                                                   Text=": "
+                                                   VerticalAlignment="Center"/>
+
+                                        <TextBox Grid.Column="2"
+                                                 IsVisible="{Binding IsScalarValue}"
+                                                 Text="{Binding Value, Mode=TwoWay}" />
+
+                                        <Button Grid.Column="2"
+                                                IsVisible="{Binding !IsScalarValue}"
+                                                Command="{Binding $parent[ItemsControl].DataContext.JsonTree.UpdateSelectCommand}"
+                                                CommandParameter="{Binding}"
+                                                >查看</Button>
+
+                                        <ComboBox Grid.Column="3"
+                                                  Width="100"
+                                                  IsEnabled="{Binding IsAdd}"
+                                                  ItemsSource="{Binding JsonNodeTypes}"
+                                                  DisplayMemberBinding="{Binding DisplayName}"
+                                                  SelectedValueBinding="{Binding Type}"
+                                                  SelectedValue="{Binding Type}">
+                                        </ComboBox>
+
+                                        <Button Grid.Column="4"
+                                                Command="{Binding $parent[ItemsControl].DataContext.JsonTree.RemoveNodeCommand}"
+                                                CommandParameter="{Binding}"
+                                                >删除</Button>
+
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+
+            </GroupBox>
+        </DockPanel>
+
+        <Border Grid.Row="2" Padding="4 1"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+            <TextBlock Text="{Binding JsonTree.StatusMessage}" />
+        </Border>
+    </Grid>
+</UserControl>

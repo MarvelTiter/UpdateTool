@@ -1,8 +1,6 @@
 ﻿using AutoInjectGenerator;
 using CommunityToolkit.Mvvm.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Net.Http.Json;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace UpdateTool.Core.Models;
 
@@ -72,5 +70,9 @@ public partial class UpdateRequest : ObservableObject
     public string FileName { get; set; } = string.Empty;
     public string FileExt { get; set; } = string.Empty;
     public bool IsPackage => FileExt != ".dll";
+
+    public string? CurrentTempPath { get; set; }
+
+    public string? CurrentBackupPath { get; set; }
 
 }

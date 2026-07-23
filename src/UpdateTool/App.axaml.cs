@@ -3,6 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -22,7 +23,7 @@ namespace UpdateTool
         {
             AvaloniaXamlLoader.Load(this);
             host = HostBuilder.Create().Build();
-            Core.App.Init(Services);
+            Ioc.Default.ConfigureServices(Services);
         }
 
         public override void OnFrameworkInitializationCompleted()

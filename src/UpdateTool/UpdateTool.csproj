@@ -9,23 +9,27 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Folder Include="Models\" />
 		<AvaloniaResource Include="Assets\**" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Avalonia" Version="12.0.3" />
-		<PackageReference Include="Avalonia.Desktop" Version="12.0.3" />
-		<PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.3" />
-		<PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.3" />
-		<PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.1">
+		<PackageReference Include="Avalonia" Version="12.1.0" />
+		<PackageReference Include="Avalonia.Desktop" Version="12.1.0" />
+		<PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.0" />
+		<PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.0" />
+		<PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3">
 			<IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
 			<PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
+		<PackageReference Include="LoggingExtensions.Avalonia" Version="2026.7.20.1" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\UpdateTool.Core\UpdateTool.Core.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Models\" />
 	</ItemGroup>
 </Project>
