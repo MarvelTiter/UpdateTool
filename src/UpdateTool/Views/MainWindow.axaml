@@ -8,6 +8,8 @@
         x:DataType="vm:MainWindowViewModel"
         WindowStartupLocation="CenterScreen"
         Icon="/Assets/avalonia-logo.ico"
+        MinWidth="1028"
+        MinHeight="712"
         Title="更新工具">
 
     <DockPanel>
