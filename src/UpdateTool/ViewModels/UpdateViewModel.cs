@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -18,13 +19,16 @@ using UpdateTool.Core.Services;
 namespace UpdateTool.ViewModels;
 
 [AutoInjectSelf]
-internal partial class UpdateViewModel(ILogger<MainWindowViewModel> logger
+internal partial class UpdateViewModel(ILogger<UpdateViewModel> logger
         , UpdateRequest setting
         , UpdateService updateService
     , StepRunner<UpdateRequest> runner) : ViewModelBase
 {
     [ObservableProperty]
     public partial UpdateRequest Setting { get; set; } = setting;
+
+    [ObservableProperty]
+    public partial ObservableCollection<BackupInfo> Backups { get; set; } = [];
 
     [RelayCommand]
     private async Task SelectFileAsync(Window window)
@@ -71,6 +75,7 @@ internal partial class UpdateViewModel(ILogger<MainWindowViewModel> logger
             Setting.ProcessName = Path.GetFileNameWithoutExtension(file.Name);
             var parent = await file.GetParentAsync();
             Setting.ApplicationPath = parent?.TryGetLocalPath();
+            Refresh();
         }
     }
 
@@ -85,6 +90,7 @@ internal partial class UpdateViewModel(ILogger<MainWindowViewModel> logger
         });
         var folder = folders.FirstOrDefault()?.TryGetLocalPath();
         Setting.ApplicationPath = folder;
+        Refresh();
     }
 
     [RelayCommand]
@@ -98,7 +104,10 @@ internal partial class UpdateViewModel(ILogger<MainWindowViewModel> logger
         });
         var folder = folders.FirstOrDefault()?.TryGetLocalPath();
         if (folder is not null)
+        {
             Setting.BackupDirectory = folder;
+            Refresh();
+        }
     }
 
     [RelayCommand]
@@ -112,7 +121,6 @@ internal partial class UpdateViewModel(ILogger<MainWindowViewModel> logger
         catch (System.Exception ex)
         {
             logger.LogError(ex, "{Message}", ex.Message);
-            await updateService.RollbackAsync(Setting.BackupDirectory, Setting.ApplicationPath!);
         }
     }
 
@@ -128,5 +136,36 @@ internal partial class UpdateViewModel(ILogger<MainWindowViewModel> logger
     private void RunNext()
     {
         runner.Continue();
+    }
+
+    [RelayCommand]
+    private async Task Rollback(BackupInfo backup)
+    {
+        await updateService.RollbackAsync(Setting, backup.Folder);
+        updateService.DeleteBackupFiles(backup.Folder);
+        Refresh();
+    }
+
+    [RelayCommand]
+    private void DeleteBackup(BackupInfo backup)
+    {
+        updateService.DeleteBackupFiles(backup.Folder);
+        Refresh();
+    }
+
+    private void Refresh()
+    {
+        if (!Path.IsPathRooted(Setting.BackupDirectory) && string.IsNullOrEmpty(Setting.ApplicationPath))
+        {
+            return;
+        }
+        var backup = Path.IsPathRooted(Setting.BackupDirectory) ? Setting.BackupDirectory : Path.Combine(Setting.ApplicationPath, Setting.BackupDirectory);
+        var folders = Directory.EnumerateDirectories(backup).Select(f =>
+        {
+            var ct = Directory.GetCreationTime(f);
+            var full = Path.GetFullPath(f);
+            return new BackupInfo(full, ct);
+        }).OrderByDescending(b => b.CreateTime);
+        Backups = new ObservableCollection<BackupInfo>(folders);
     }
 }

@@ -154,16 +154,18 @@ public class UpdateService
     /// <summary>
     /// 回滚更新（使用备份恢复）
     /// </summary>
-    public async Task RollbackAsync(string backupPath, string targetPath, bool restartProcess = true, string? processName = null)
+    public async Task RollbackAsync(UpdateRequest request, string? rollbackFolder = null)
     {
-        if (restartProcess && !string.IsNullOrEmpty(processName))
-        {
-            await processService.StopProcessAsync(processName);
-            await Task.Delay(1000);
-        }
-
+        ArgumentNullException.ThrowIfNull(rollbackFolder, "还原目录为空");
+        await processService.StopProcessAsync(request.ProcessName, request.ProcessPort);
+        await Task.Delay(1000);
         // 恢复文件
-        fileService.RestoreBackupFiles(backupPath);
+        await fileService.RestoreBackupFiles(request, rollbackFolder);
 
+    }
+
+    public void DeleteBackupFiles(string folder)
+    {
+        fileService.RemoveBackupFiles(folder);
     }
 }

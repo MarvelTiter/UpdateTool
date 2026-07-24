@@ -125,24 +125,33 @@ public class FileUpdateService(ILogger<FileUpdateService> logger)
     /// 恢复备份文件
     /// </summary>
     /// <param name="directory">包含备份文件的目录</param>
-    public void RestoreBackupFiles(string directory)
+    public async Task RestoreBackupFiles(UpdateRequest request, string updatePath)
     {
-        var backupFiles = Directory.GetFiles(directory, "*.bak", SearchOption.AllDirectories);
+        var files = Directory.EnumerateFiles(updatePath, "*", SearchOption.AllDirectories);
 
-        foreach (var backupFile in backupFiles)
+        var excludeFolders = request.ExcludeFolder.Split(',', StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (var file in files)
         {
-            var originalFile = backupFile.Substring(0, backupFile.Length - 4); // 移除 .bak
-            try
+            // 检查是否在排除列表中
+            if (excludeFolders?.Length > 0)
             {
-                if (File.Exists(backupFile))
+                if (excludeFolders.Any(f => IsPathInFolder(file, f)))
                 {
-                    File.Copy(backupFile, originalFile, overwrite: true);
+                    continue;
                 }
             }
-            catch
+
+            var relativePath = Path.GetRelativePath(updatePath, file);
+            var destFile = Path.Combine(request.ApplicationPath, relativePath);
+            var destDir = Path.GetDirectoryName(destFile);
+
+            if (!string.IsNullOrEmpty(destDir))
             {
-                // 忽略恢复失败的备份文件
+                Directory.CreateDirectory(destDir);
             }
+
+            await CopyFileWithRetryAsync(file, destFile);
         }
     }
 
@@ -182,13 +191,26 @@ public class FileUpdateService(ILogger<FileUpdateService> logger)
     {
         try
         {
-            if (request.CurrentTempPath is null) 
+            if (request.CurrentTempPath is null)
                 return;
-            Directory.Delete(request.CurrentTempPath,true);
+            Directory.Delete(request.CurrentTempPath, true);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "清理临时文件发生错误:{Message}", ex.Message);
+
+        }
+    }
+
+    public void RemoveBackupFiles(string backupFolder)
+    {
+        try
+        {
+            Directory.Delete(backupFolder, true);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "删除备份文件发生错误:{Message}", ex.Message);
 
         }
     }
